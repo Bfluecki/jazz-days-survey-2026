@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Jazz Days Ligerz 2026 – Umfrage-Tool
 
-## Getting Started
+Online-Umfrage-Tool für Besucher, Helfer, Musiker und Partner der Jazz Days Ligerz 2026.
 
-First, run the development server:
+## Funktionen
+
+- 4 separate Umfragen (Besucher, Helfer, Musiker, Partner), dynamisch aus `lib/surveys.ts` generiert
+- Optionale Anonymität, Kontaktdaten und kategoriespezifisches Zusatzfeld
+- Fragetypen: Single Choice, Multiple Choice, Bewertung 1–5, NPS 0–10, Freitext kurz/lang
+- Speicherung in SQLite (`better-sqlite3`)
+- Admin-Bereich (`/admin`, Basic Auth) mit Übersicht, Kennzahlen (Ø-Bewertungen, NPS) und CSV-Export
+
+## Lokale Entwicklung
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Die App läuft danach auf http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Admin-Zugang
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Geschützt via HTTP Basic Auth. Standard-Zugangsdaten (bitte in Produktion per Env-Variable überschreiben):
 
-## Learn More
+- `ADMIN_USER` (Standard: `admin`)
+- `ADMIN_PASSWORD` (Standard: `jazzdays2026`)
 
-To learn more about Next.js, take a look at the following resources:
+## Daten
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Die SQLite-Datenbank wird im Verzeichnis `DB_DIR` (Standard: `./data`) als `survey.db` gespeichert.
+Für Railway sollte ein Volume auf `/data` gemountet und `DB_DIR=/data` gesetzt werden.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment auf Railway
 
-## Deploy on Vercel
+Das Repo enthält ein `Dockerfile` und `railway.json`. In Railway:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Neues Projekt aus diesem GitHub-Repo erstellen
+2. Volume anlegen und unter `/data` mounten
+3. Umgebungsvariablen setzen: `DB_DIR=/data`, `ADMIN_USER`, `ADMIN_PASSWORD`
+4. Deploy starten – Railway baut automatisch via Dockerfile
