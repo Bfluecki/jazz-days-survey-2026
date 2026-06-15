@@ -152,6 +152,7 @@ function QuestionField({
 
 export default function SurveyForm({ survey }: { survey: SurveyConfig }) {
   const router = useRouter();
+  const [step, setStep] = useState<"intro" | "form">("intro");
   const [anonymous, setAnonymous] = useState<boolean | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -188,66 +189,98 @@ export default function SurveyForm({ survey }: { survey: SurveyConfig }) {
     }
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-      {/* Anonymous toggle */}
-      <section className="rounded-xl border border-jazz-teal-pale bg-white p-5">
-        <p className="font-semibold mb-3 normal-case tracking-normal">
-          Möchtest du / Möchten Sie die Umfrage anonym ausfüllen?
-        </p>
-        <div className="flex gap-3">
-          {[
-            { label: "Ja", val: true },
-            { label: "Nein", val: false },
-          ].map((opt) => (
-            <button
-              type="button"
-              key={opt.label}
-              onClick={() => setAnonymous(opt.val)}
-              className={`rounded-full px-5 py-2 text-sm font-semibold border transition ${
-                anonymous === opt.val
-                  ? "bg-jazz-teal text-white border-jazz-teal"
-                  : "bg-white border-jazz-teal-pale text-foreground hover:border-jazz-teal"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+  if (step === "intro") {
+    return (
+      <div className="flex flex-col gap-8">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-jazz-teal mb-4">{survey.title}</h2>
+          <div className="text-sm sm:text-base text-foreground/80 whitespace-pre-line mb-4 normal-case tracking-normal font-body">
+            {survey.intro}
+          </div>
+          <p className="text-sm font-semibold text-jazz-teal normal-case tracking-normal">
+            Alle Fragen sind freiwillig.
+          </p>
         </div>
 
-        {anonymous === false && (
-          <div className="flex flex-col gap-3 mt-4">
-            <input
-              type="text"
-              placeholder="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-jazz-teal-pale/60 px-4 py-2.5 text-sm normal-case tracking-normal font-body focus:outline-none focus:ring-2 focus:ring-jazz-teal"
-            />
-            <input
-              type="email"
-              placeholder="E-Mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-jazz-teal-pale/60 px-4 py-2.5 text-sm normal-case tracking-normal font-body focus:outline-none focus:ring-2 focus:ring-jazz-teal"
-            />
-            {survey.extraFieldLabel && (
-              <div>
-                <label className="block text-sm mb-1 normal-case tracking-normal text-foreground/70">
-                  {survey.extraFieldLabel}
-                </label>
-                <input
-                  type="text"
-                  placeholder={survey.extraFieldPlaceholder}
-                  value={extraField}
-                  onChange={(e) => setExtraField(e.target.value)}
-                  className="w-full rounded-lg border border-jazz-teal-pale/60 px-4 py-2.5 text-sm normal-case tracking-normal font-body focus:outline-none focus:ring-2 focus:ring-jazz-teal"
-                />
-              </div>
-            )}
+        <section className="rounded-xl border border-jazz-teal-pale bg-white p-5">
+          <p className="font-semibold mb-3 normal-case tracking-normal">
+            Möchtest du / Möchten Sie die Umfrage anonym ausfüllen?
+          </p>
+          <div className="flex gap-3">
+            {[
+              { label: "Ja, anonym", val: true },
+              { label: "Nein, mit Kontaktdaten", val: false },
+            ].map((opt) => (
+              <button
+                type="button"
+                key={opt.label}
+                onClick={() => setAnonymous(opt.val)}
+                className={`rounded-full px-5 py-2 text-sm font-semibold border transition ${
+                  anonymous === opt.val
+                    ? "bg-jazz-teal text-white border-jazz-teal"
+                    : "bg-white border-jazz-teal-pale text-foreground hover:border-jazz-teal"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
-        )}
-      </section>
+
+          {anonymous === false && (
+            <div className="flex flex-col gap-3 mt-4">
+              <input
+                type="text"
+                placeholder="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-lg border border-jazz-teal-pale/60 px-4 py-2.5 text-sm normal-case tracking-normal font-body focus:outline-none focus:ring-2 focus:ring-jazz-teal"
+              />
+              <input
+                type="email"
+                placeholder="E-Mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-jazz-teal-pale/60 px-4 py-2.5 text-sm normal-case tracking-normal font-body focus:outline-none focus:ring-2 focus:ring-jazz-teal"
+              />
+              {survey.extraFieldLabel && (
+                <div>
+                  <label className="block text-sm mb-1 normal-case tracking-normal text-foreground/70">
+                    {survey.extraFieldLabel}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={survey.extraFieldPlaceholder}
+                    value={extraField}
+                    onChange={(e) => setExtraField(e.target.value)}
+                    className="w-full rounded-lg border border-jazz-teal-pale/60 px-4 py-2.5 text-sm normal-case tracking-normal font-body focus:outline-none focus:ring-2 focus:ring-jazz-teal"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        <button
+          type="button"
+          disabled={anonymous === null}
+          onClick={() => setStep("form")}
+          className="w-full rounded-full bg-jazz-teal text-white font-semibold py-3 hover:bg-jazz-teal/90 transition disabled:opacity-40"
+        >
+          Weiter zu den Fragen
+        </button>
+
+        <p className="text-xs text-foreground/50 text-center normal-case tracking-normal">
+          Die Teilnahme ist freiwillig. Die Umfrage kann anonym ausgefüllt werden.
+          Kontaktangaben werden nur verwendet, falls Rückfragen nötig sind oder wenn Sie
+          ausdrücklich kontaktiert werden möchten.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+      <h2 className="text-2xl sm:text-3xl font-bold text-jazz-teal">{survey.title}</h2>
 
       {/* Questions */}
       {survey.questions.map((q, i) => (

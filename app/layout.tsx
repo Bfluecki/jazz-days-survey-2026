@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Oswald, Open_Sans } from "next/font/google";
 import "./globals.css";
+import Header from "./components/Header";
 
 const oswald = Oswald({
   variable: "--font-oswald",
@@ -25,7 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de" className={`${oswald.variable} ${openSans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        <Header />
+        {children}
+      </body>
     </html>
   );
 }

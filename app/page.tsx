@@ -12,11 +12,8 @@ export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center bg-background">
       <main className="flex flex-1 w-full max-w-2xl flex-col items-center px-6 py-12 sm:py-20">
-        <h1 className="text-3xl sm:text-4xl font-bold text-jazz-teal text-center mb-2">
-          Jazz Days Ligerz 2026
-        </h1>
-        <h2 className="text-lg sm:text-xl font-medium text-foreground/70 text-center mb-8 normal-case tracking-normal">
-          Umfrage
+        <h2 className="text-lg sm:text-xl font-medium text-foreground/70 text-center mb-8 normal-case tracking-normal mt-8">
+          Welche Umfrage möchtest du ausfüllen?
         </h2>
 
         <p className="text-center text-foreground/80 mb-10 max-w-md">
