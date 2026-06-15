@@ -89,7 +89,7 @@ Mit dieser kurzen Umfrage möchten wir erfahren, wie Sie die Jazz Days erlebt ha
       { id: "q10", type: "rating5", label: "Wie beurteilen Sie das Verpflegungsangebot?" },
       {
         id: "q11",
-        type: "single",
+        type: "multiple",
         label: "Wie haben Sie von den Jazz Days erfahren?",
         options: ["Freunde/Bekannte", "Facebook", "Instagram", "Website", "Flyer/Plakate", "Medien", "Andere"],
       },
