@@ -32,7 +32,7 @@ export default function AdminPage() {
   const [responses, setResponses] = useState<ResponseRow[]>([]);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [filter, setFilter] = useState<string>("all");
-  const [view, setView] = useState<"responses" | "logs">("responses");
+  const [view, setView] = useState<"responses" | "analysis" | "logs">("responses");
   const [loading, setLoading] = useState(true);
 
   function loadResponses() {
@@ -107,6 +107,80 @@ export default function AdminPage() {
       });
   }, [filtered, filter]);
 
+  const analysis = useMemo(() => {
+    if (filter === "all") return null;
+    const survey = surveys[filter];
+    return survey.questions.map((q) => {
+      const raw = filtered.map((r) => r.answers[q.id]).filter((v) => v !== undefined && v !== "");
+
+      if (q.type === "single" || q.type === "multiple") {
+        const counts: Record<string, number> = {};
+        for (const opt of q.options || []) counts[opt] = 0;
+        let total = 0;
+        for (const v of raw) {
+          const vals = Array.isArray(v) ? v : [v as string];
+          for (const val of vals) {
+            counts[val] = (counts[val] || 0) + 1;
+            total++;
+          }
+        }
+        const n = raw.length;
+        return {
+          id: q.id,
+          label: q.label,
+          kind: "choice" as const,
+          n,
+          bars: Object.entries(counts).map(([opt, c]) => ({
+            opt,
+            count: c,
+            pct: total ? Math.round((c / (q.type === "multiple" ? n : total || 1)) * 100) : 0,
+          })),
+        };
+      }
+
+      if (q.type === "rating5" || q.type === "nps") {
+        const values = raw.map((v) => Number(v)).filter((v) => !isNaN(v));
+        const max = q.type === "rating5" ? 5 : 10;
+        const min = q.type === "rating5" ? 1 : 0;
+        const counts: Record<number, number> = {};
+        for (let i = min; i <= max; i++) counts[i] = 0;
+        for (const v of values) counts[v] = (counts[v] || 0) + 1;
+        const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+
+        let nps: number | null = null;
+        if (q.type === "nps" && values.length) {
+          const promoters = values.filter((v) => v >= 9).length;
+          const detractors = values.filter((v) => v <= 6).length;
+          nps = Math.round(((promoters - detractors) / values.length) * 100);
+        }
+
+        return {
+          id: q.id,
+          label: q.label,
+          kind: "scale" as const,
+          n: values.length,
+          avg,
+          nps,
+          max,
+          bars: Object.entries(counts).map(([val, c]) => ({
+            opt: val,
+            count: c,
+            pct: values.length ? Math.round((c / values.length) * 100) : 0,
+          })),
+        };
+      }
+
+      // text
+      return {
+        id: q.id,
+        label: q.label,
+        kind: "text" as const,
+        n: raw.length,
+        texts: raw as string[],
+      };
+    });
+  }, [filtered, filter]);
+
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
     for (const slug of surveyOrder) {
@@ -129,6 +203,14 @@ export default function AdminPage() {
           Antworten
         </button>
         <button
+          onClick={() => setView("analysis")}
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold border ${
+            view === "analysis" ? "bg-jazz-teal text-white border-jazz-teal" : "border-jazz-teal-pale"
+          }`}
+        >
+          Auswertung
+        </button>
+        <button
           onClick={() => setView("logs")}
           className={`rounded-full px-4 py-1.5 text-sm font-semibold border ${
             view === "logs" ? "bg-jazz-teal text-white border-jazz-teal" : "border-jazz-teal-pale"
@@ -138,7 +220,7 @@ export default function AdminPage() {
         </button>
       </div>
 
-      {view === "responses" && (
+      {(view === "responses" || view === "analysis") && (
       <>
       <div className="flex flex-wrap items-center gap-2 mb-6">
         <button
@@ -161,24 +243,106 @@ export default function AdminPage() {
           </button>
         ))}
 
+        {view === "responses" && (
         <a
           href={`/api/admin/export${filter === "all" ? "" : `?category=${filter}`}`}
           className="ml-auto rounded-full px-4 py-1.5 text-sm font-semibold bg-jazz-accent text-white"
         >
           CSV Export {filter === "all" ? "(alle)" : `(${surveys[filter].category})`}
         </a>
+        )}
 
+        {view === "responses" && (
         <button
           onClick={() => handleDeleteSurvey(filter)}
           className="rounded-full px-4 py-1.5 text-sm font-semibold border border-red-600 text-red-600 hover:bg-red-50"
         >
           {filter === "all" ? "Alle Umfragen löschen" : `${surveys[filter].category}-Umfrage löschen`}
         </button>
+        )}
       </div>
 
       {loading && <p>Lade Daten ...</p>}
 
-      {!loading && stats && (
+      {view === "analysis" && !loading && (
+        filter === "all" ? (
+          <p className="text-foreground/60">Bitte wähle eine Umfrage-Kategorie aus, um die Auswertung zu sehen.</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {analysis?.map((a) => (
+              <div key={a.id} className="rounded-xl border border-jazz-teal-pale bg-white p-4">
+                <p className="font-semibold mb-3 normal-case tracking-normal">
+                  {a.label} <span className="text-foreground/40 font-normal">(n={a.n})</span>
+                </p>
+
+                {a.kind === "choice" && (
+                  <div className="flex flex-col gap-2">
+                    {a.bars.map((b) => (
+                      <div key={b.opt} className="flex items-center gap-3">
+                        <span className="w-48 shrink-0 text-sm normal-case tracking-normal">{b.opt}</span>
+                        <div className="flex-1 h-4 bg-jazz-teal-pale/20 rounded overflow-hidden">
+                          <div
+                            className="h-full bg-jazz-teal rounded"
+                            style={{ width: `${b.pct}%` }}
+                          />
+                        </div>
+                        <span className="w-20 shrink-0 text-sm text-right normal-case tracking-normal">
+                          {b.count} ({b.pct}%)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {a.kind === "scale" && (
+                  <>
+                    <p className="text-2xl font-bold text-jazz-teal mb-3">
+                      {a.avg !== null ? a.avg.toFixed(2) : "–"}{" "}
+                      <span className="text-sm font-normal text-foreground/50">
+                        {a.nps !== null ? `Ø, NPS ${a.nps}` : `/ ${a.max} Ø`}
+                      </span>
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {a.bars.map((b) => (
+                        <div key={b.opt} className="flex items-center gap-3">
+                          <span className="w-10 shrink-0 text-sm normal-case tracking-normal">{b.opt}</span>
+                          <div className="flex-1 h-4 bg-jazz-teal-pale/20 rounded overflow-hidden">
+                            <div
+                              className="h-full bg-jazz-teal rounded"
+                              style={{ width: `${b.pct}%` }}
+                            />
+                          </div>
+                          <span className="w-20 shrink-0 text-sm text-right normal-case tracking-normal">
+                            {b.count} ({b.pct}%)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {a.kind === "text" && (
+                  <div className="flex flex-col gap-2">
+                    {a.texts.length === 0 && (
+                      <p className="text-sm text-foreground/50 normal-case tracking-normal">Keine Antworten.</p>
+                    )}
+                    {a.texts.map((t, i) => (
+                      <p
+                        key={i}
+                        className="text-sm normal-case tracking-normal rounded-lg bg-jazz-teal-pale/10 px-3 py-2"
+                      >
+                        {t}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {view === "responses" && !loading && stats && (
         <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {stats.map((s, i) => (
             <div key={i} className="rounded-xl border border-jazz-teal-pale bg-white p-4">
@@ -199,7 +363,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {!loading && (
+      {view === "responses" && !loading && (
         <div className="overflow-x-auto rounded-xl border border-jazz-teal-pale bg-white">
           <table className="min-w-full text-sm">
             <thead>

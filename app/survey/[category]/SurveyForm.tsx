@@ -160,6 +160,18 @@ export default function SurveyForm({ survey }: { survey: SurveyConfig }) {
   const [answers, setAnswers] = useState<Answers>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [introError, setIntroError] = useState<string | null>(null);
+
+  const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+
+  function handleContinue() {
+    if (!anonymous && (!name.trim() || !isValidEmail(email))) {
+      setIntroError("Bitte gib Name und eine gültige E-Mail-Adresse ein oder aktiviere die anonyme Teilnahme.");
+      return;
+    }
+    setIntroError(null);
+    setStep("form");
+  }
 
   const setAnswer = (id: string, v: string | string[]) =>
     setAnswers((prev) => ({ ...prev, [id]: v }));
@@ -263,9 +275,11 @@ export default function SurveyForm({ survey }: { survey: SurveyConfig }) {
           )}
         </section>
 
+        {introError && <p className="text-sm text-red-600 normal-case tracking-normal">{introError}</p>}
+
         <button
           type="button"
-          onClick={() => setStep("form")}
+          onClick={handleContinue}
           className="w-full rounded-full bg-jazz-teal text-white font-semibold py-3 hover:bg-jazz-teal/90 transition disabled:opacity-40"
         >
           Weiter zu den Fragen
