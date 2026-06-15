@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db";
+import db, { logAdminAction } from "@/lib/db";
+import { getActor } from "@/lib/adminAuth";
 import { surveys } from "@/lib/surveys";
 
 function csvEscape(val: unknown): string {
@@ -47,6 +48,8 @@ export async function GET(req: NextRequest) {
 
   const csv = "﻿" + lines.join("\r\n");
   const filename = survey ? `jazzdays2026_${survey.slug}.csv` : "jazzdays2026_alle.csv";
+
+  logAdminAction("export_csv", categorySlug ? `category=${categorySlug}` : "alle", getActor(req));
 
   return new NextResponse(csv, {
     headers: {

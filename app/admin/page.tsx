@@ -14,19 +14,53 @@ type ResponseRow = {
   answers: Record<string, string | string[]>;
 };
 
+type LogRow = {
+  id: number;
+  created_at: string;
+  action: string;
+  details: string | null;
+  actor: string | null;
+};
+
+const actionLabels: Record<string, string> = {
+  view_responses: "Antworten angesehen",
+  export_csv: "CSV-Export",
+  delete_response: "Antwort gelöscht",
+};
+
 export default function AdminPage() {
   const [responses, setResponses] = useState<ResponseRow[]>([]);
+  const [logs, setLogs] = useState<LogRow[]>([]);
   const [filter, setFilter] = useState<string>("all");
+  const [view, setView] = useState<"responses" | "logs">("responses");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function loadResponses() {
     fetch("/api/admin/responses")
       .then((r) => r.json())
       .then((data) => {
         setResponses(data);
         setLoading(false);
       });
+  }
+
+  useEffect(() => {
+    loadResponses();
   }, []);
+
+  useEffect(() => {
+    if (view === "logs") {
+      fetch("/api/admin/logs")
+        .then((r) => r.json())
+        .then(setLogs);
+    }
+  }, [view]);
+
+  async function handleDelete(id: number) {
+    if (!confirm(`Antwort #${id} wirklich unwiderruflich löschen?`)) return;
+    await fetch(`/api/admin/responses?id=${id}`, { method: "DELETE" });
+    setResponses((prev) => prev.filter((r) => r.id !== id));
+  }
 
   const filtered = useMemo(() => {
     if (filter === "all") return responses;
@@ -71,6 +105,27 @@ export default function AdminPage() {
     <div className="flex flex-col flex-1 bg-background px-4 sm:px-8 py-8 max-w-6xl mx-auto w-full">
       <h1 className="text-2xl font-bold text-jazz-teal mb-6">Admin – Jazz Days Ligerz 2026</h1>
 
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setView("responses")}
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold border ${
+            view === "responses" ? "bg-jazz-teal text-white border-jazz-teal" : "border-jazz-teal-pale"
+          }`}
+        >
+          Antworten
+        </button>
+        <button
+          onClick={() => setView("logs")}
+          className={`rounded-full px-4 py-1.5 text-sm font-semibold border ${
+            view === "logs" ? "bg-jazz-teal text-white border-jazz-teal" : "border-jazz-teal-pale"
+          }`}
+        >
+          Aktivitäts-Log
+        </button>
+      </div>
+
+      {view === "responses" && (
+      <>
       <div className="flex flex-wrap items-center gap-2 mb-6">
         <button
           onClick={() => setFilter("all")}
@@ -135,6 +190,7 @@ export default function AdminPage() {
                 <th className="p-3">E-Mail</th>
                 <th className="p-3">Zusatzfeld</th>
                 <th className="p-3">Antworten</th>
+                <th className="p-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -156,11 +212,47 @@ export default function AdminPage() {
                       </pre>
                     </details>
                   </td>
+                  <td className="p-3">
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      className="text-xs font-semibold text-red-600 hover:underline normal-case tracking-normal"
+                    >
+                      löschen
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
           {filtered.length === 0 && <p className="p-4 text-foreground/60">Keine Antworten vorhanden.</p>}
+        </div>
+      )}
+      </>
+      )}
+
+      {view === "logs" && (
+        <div className="overflow-x-auto rounded-xl border border-jazz-teal-pale bg-white">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-jazz-teal-pale text-left">
+                <th className="p-3">Datum</th>
+                <th className="p-3">Aktion</th>
+                <th className="p-3">Details</th>
+                <th className="p-3">Benutzer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((l) => (
+                <tr key={l.id} className="border-b border-jazz-teal-pale/40">
+                  <td className="p-3 whitespace-nowrap">{new Date(l.created_at).toLocaleString("de-CH")}</td>
+                  <td className="p-3">{actionLabels[l.action] || l.action}</td>
+                  <td className="p-3 normal-case tracking-normal">{l.details || "–"}</td>
+                  <td className="p-3">{l.actor || "–"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {logs.length === 0 && <p className="p-4 text-foreground/60">Keine Log-Einträge vorhanden.</p>}
         </div>
       )}
     </div>

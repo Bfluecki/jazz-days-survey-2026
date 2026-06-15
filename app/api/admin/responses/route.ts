@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db";
+import db, { logAdminAction } from "@/lib/db";
+import { getActor } from "@/lib/adminAuth";
 
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get("category");
@@ -14,5 +15,19 @@ export async function GET(req: NextRequest) {
     answers: JSON.parse(r.answers as string),
   }));
 
+  logAdminAction("view_responses", category ? `category=${category}` : "alle", getActor(req));
+
   return NextResponse.json(parsed);
+}
+
+export async function DELETE(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "id fehlt" }, { status: 400 });
+  }
+
+  db.prepare("DELETE FROM responses WHERE id = ?").run(id);
+  logAdminAction("delete_response", `id=${id}`, getActor(req));
+
+  return NextResponse.json({ ok: true });
 }

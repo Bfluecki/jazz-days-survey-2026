@@ -24,4 +24,23 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS admin_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT NOT NULL,
+    action TEXT NOT NULL,
+    details TEXT,
+    actor TEXT
+  )
+`);
+
+export function logAdminAction(action: string, details?: string, actor?: string) {
+  db.prepare("INSERT INTO admin_logs (created_at, action, details, actor) VALUES (?, ?, ?, ?)").run(
+    new Date().toISOString(),
+    action,
+    details || null,
+    actor || null
+  );
+}
+
 export default db;
