@@ -153,7 +153,7 @@ function QuestionField({
 export default function SurveyForm({ survey }: { survey: SurveyConfig }) {
   const router = useRouter();
   const [step, setStep] = useState<"intro" | "form">("intro");
-  const [anonymous, setAnonymous] = useState<boolean | null>(null);
+  const [anonymous, setAnonymous] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [extraField, setExtraField] = useState("");
@@ -174,7 +174,7 @@ export default function SurveyForm({ survey }: { survey: SurveyConfig }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category: survey.slug,
-          anonymous: anonymous ?? true,
+          anonymous,
           name,
           email,
           extraField,
@@ -203,31 +203,28 @@ export default function SurveyForm({ survey }: { survey: SurveyConfig }) {
         </div>
 
         <section className="rounded-xl border border-jazz-teal-pale bg-white p-5">
-          <p className="font-semibold mb-3 normal-case tracking-normal">
-            Möchtest du / Möchten Sie die Umfrage anonym ausfüllen?
-          </p>
-          <div className="flex gap-3">
-            {[
-              { label: "Ja, anonym", val: true },
-              { label: "Nein, mit Kontaktdaten", val: false },
-            ].map((opt) => (
-              <button
-                type="button"
-                key={opt.label}
-                onClick={() => setAnonymous(opt.val)}
-                className={`rounded-full px-5 py-2 text-sm font-semibold border transition ${
-                  anonymous === opt.val
-                    ? "bg-jazz-teal text-white border-jazz-teal"
-                    : "bg-white border-jazz-teal-pale text-foreground hover:border-jazz-teal"
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <p className="font-semibold normal-case tracking-normal">Deine Kontaktangaben</p>
+
+            <label className="flex items-center gap-2 cursor-pointer shrink-0">
+              <span className="text-sm font-semibold normal-case tracking-normal">Teilnahme anonym</span>
+              <span
+                onClick={() => setAnonymous(!(anonymous ?? false))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  anonymous ? "bg-jazz-teal" : "bg-jazz-teal-pale/40"
                 }`}
               >
-                {opt.label}
-              </button>
-            ))}
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                    anonymous ? "translate-x-5" : "translate-x-0.5"
+                  }`}
+                />
+              </span>
+            </label>
           </div>
 
-          {anonymous === false && (
-            <div className="flex flex-col gap-3 mt-4">
+          {!anonymous && (
+            <div className="flex flex-col gap-3">
               <input
                 type="text"
                 placeholder="Name"
@@ -258,11 +255,16 @@ export default function SurveyForm({ survey }: { survey: SurveyConfig }) {
               )}
             </div>
           )}
+
+          {anonymous && (
+            <p className="text-sm text-foreground/60 normal-case tracking-normal">
+              Du nimmst anonym teil – es werden keine Kontaktdaten erfasst.
+            </p>
+          )}
         </section>
 
         <button
           type="button"
-          disabled={anonymous === null}
           onClick={() => setStep("form")}
           className="w-full rounded-full bg-jazz-teal text-white font-semibold py-3 hover:bg-jazz-teal/90 transition disabled:opacity-40"
         >
