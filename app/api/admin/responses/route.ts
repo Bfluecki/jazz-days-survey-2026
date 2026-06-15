@@ -22,12 +22,25 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
-  if (!id) {
-    return NextResponse.json({ error: "id fehlt" }, { status: 400 });
+  const category = req.nextUrl.searchParams.get("category");
+
+  if (id) {
+    db.prepare("DELETE FROM responses WHERE id = ?").run(id);
+    logAdminAction("delete_response", `id=${id}`, getActor(req));
+    return NextResponse.json({ ok: true });
   }
 
-  db.prepare("DELETE FROM responses WHERE id = ?").run(id);
-  logAdminAction("delete_response", `id=${id}`, getActor(req));
+  if (category) {
+    const result = db.prepare("DELETE FROM responses WHERE category = ?").run(category);
+    logAdminAction("delete_category", `category=${category}, count=${result.changes}`, getActor(req));
+    return NextResponse.json({ ok: true, deleted: result.changes });
+  }
 
-  return NextResponse.json({ ok: true });
+  if (req.nextUrl.searchParams.get("all") === "true") {
+    const result = db.prepare("DELETE FROM responses").run();
+    logAdminAction("delete_all", `count=${result.changes}`, getActor(req));
+    return NextResponse.json({ ok: true, deleted: result.changes });
+  }
+
+  return NextResponse.json({ error: "id, category oder all fehlt" }, { status: 400 });
 }

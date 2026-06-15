@@ -62,6 +62,20 @@ export default function AdminPage() {
     setResponses((prev) => prev.filter((r) => r.id !== id));
   }
 
+  async function handleDeleteSurvey(filterSlug: string) {
+    if (filterSlug === "all") {
+      if (!confirm("Wirklich ALLE Umfrage-Antworten aus allen Kategorien unwiderruflich löschen?")) return;
+      await fetch(`/api/admin/responses?all=true`, { method: "DELETE" });
+      setResponses([]);
+      return;
+    }
+
+    const category = surveys[filterSlug].category;
+    if (!confirm(`Wirklich alle Antworten der ${category}-Umfrage unwiderruflich löschen?`)) return;
+    await fetch(`/api/admin/responses?category=${encodeURIComponent(category)}`, { method: "DELETE" });
+    setResponses((prev) => prev.filter((r) => r.category !== category));
+  }
+
   const filtered = useMemo(() => {
     if (filter === "all") return responses;
     const cat = surveys[filter]?.category;
@@ -153,6 +167,13 @@ export default function AdminPage() {
         >
           CSV Export {filter === "all" ? "(alle)" : `(${surveys[filter].category})`}
         </a>
+
+        <button
+          onClick={() => handleDeleteSurvey(filter)}
+          className="rounded-full px-4 py-1.5 text-sm font-semibold border border-red-600 text-red-600 hover:bg-red-50"
+        >
+          {filter === "all" ? "Alle Umfragen löschen" : `${surveys[filter].category}-Umfrage löschen`}
+        </button>
       </div>
 
       {loading && <p>Lade Daten ...</p>}
